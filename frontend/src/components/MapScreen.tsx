@@ -13,6 +13,7 @@ import { colors } from '../theme';
 import { BuildingSheet } from './BuildingSheet';
 import { EventDetail } from './EventDetail';
 import { MyDayScreen } from './MyDayScreen';
+import { SearchScreen } from './SearchScreen';
 
 type Tone = 'green' | 'focus' | 'muted' | 'plain';
 
@@ -37,6 +38,7 @@ export function MapScreen() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [eventId, setEventId] = useState<string | null>(null);
   const [tab, setTab] = useState<'map' | 'day'>('map');
+  const [searching, setSearching] = useState(false);
 
   const selectedBuilding = buildings.find((building) => building.id === selectedId) ?? null;
 
@@ -49,6 +51,14 @@ export function MapScreen() {
     <SafeAreaView style={styles.screen}>
       {tab === 'day' ? (
         <MyDayScreen />
+      ) : searching ? (
+        <SearchScreen
+          onCancel={() => setSearching(false)}
+          onOpenEvent={(id) => {
+            setSearching(false);
+            setEventId(id);
+          }}
+        />
       ) : eventId ? (
         <EventDetail
           eventId={eventId}
@@ -63,9 +73,9 @@ export function MapScreen() {
         <View style={styles.header}>
           <View style={styles.titleRow}>
             <Text style={styles.title}>Map</Text>
-            <View style={styles.search}>
+            <Pressable onPress={() => setSearching(true)} style={styles.search}>
               <Text style={styles.searchMark}>⌕</Text>
-            </View>
+            </Pressable>
           </View>
           <Text style={styles.wordmark}>DAY MAP</Text>
         </View>
@@ -161,6 +171,7 @@ export function MapScreen() {
           onPress={() => {
             setEventId(null);
             setSelectedId(null);
+            setSearching(false);
             setTab('day');
           }}
         >
@@ -170,7 +181,7 @@ export function MapScreen() {
         </Pressable>
       </View>
       <BuildingSheet
-        building={eventId || tab === 'day' ? null : selectedBuilding}
+        building={eventId || searching || tab === 'day' ? null : selectedBuilding}
         onClose={() => setSelectedId(null)}
         onOpenEvent={setEventId}
       />
