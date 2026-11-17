@@ -10,6 +10,7 @@ import {
 
 import { buildings, events, mapChips, type Category } from '../data';
 import { colors } from '../theme';
+import { BuildingSheet } from './BuildingSheet';
 
 type Tone = 'green' | 'focus' | 'muted' | 'plain';
 
@@ -32,6 +33,8 @@ export function MapScreen() {
   const [reachableOnly, setReachableOnly] = useState(true);
   const [category, setCategory] = useState<Category | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const selectedBuilding = buildings.find((building) => building.id === selectedId) ?? null;
 
   const reachableCount = events.filter((event) => {
     if (!categoryMatch(category, event.category)) return false;
@@ -141,6 +144,7 @@ export function MapScreen() {
           <Text style={[styles.tabLabel, styles.tabIdle]}>My day</Text>
         </View>
       </View>
+      <BuildingSheet building={selectedBuilding} onClose={() => setSelectedId(null)} />
     </SafeAreaView>
   );
 }
