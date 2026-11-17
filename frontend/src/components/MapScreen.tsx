@@ -11,6 +11,7 @@ import {
 import { buildings, events, mapChips, type Category } from '../data';
 import { colors } from '../theme';
 import { BuildingSheet } from './BuildingSheet';
+import { EventDetail } from './EventDetail';
 
 type Tone = 'green' | 'focus' | 'muted' | 'plain';
 
@@ -33,6 +34,7 @@ export function MapScreen() {
   const [reachableOnly, setReachableOnly] = useState(true);
   const [category, setCategory] = useState<Category | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [eventId, setEventId] = useState<string | null>(null);
 
   const selectedBuilding = buildings.find((building) => building.id === selectedId) ?? null;
 
@@ -43,6 +45,9 @@ export function MapScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
+      {eventId ? (
+        <EventDetail eventId={eventId} onBack={() => setEventId(null)} />
+      ) : (
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.titleRow}>
@@ -132,6 +137,7 @@ export function MapScreen() {
         </View>
         <Text style={styles.hint}>Tap a building to see what fits.</Text>
       </ScrollView>
+      )}
 
       <View style={styles.tabs}>
         <View style={styles.tab}>
@@ -144,7 +150,11 @@ export function MapScreen() {
           <Text style={[styles.tabLabel, styles.tabIdle]}>My day</Text>
         </View>
       </View>
-      <BuildingSheet building={selectedBuilding} onClose={() => setSelectedId(null)} />
+      <BuildingSheet
+        building={eventId ? null : selectedBuilding}
+        onClose={() => setSelectedId(null)}
+        onOpenEvent={setEventId}
+      />
     </SafeAreaView>
   );
 }

@@ -6,9 +6,11 @@ import { colors } from '../theme';
 export function BuildingSheet({
   building,
   onClose,
+  onOpenEvent,
 }: {
   building: Building | null;
   onClose: () => void;
+  onOpenEvent: (eventId: string) => void;
 }) {
   const listed = events
     .filter((event) => event.buildingId === building?.id)
@@ -32,7 +34,7 @@ export function BuildingSheet({
             </Pressable>
           </View>
           {listed.map((event) => (
-            <EventRow key={event.id} event={event} />
+            <EventRow key={event.id} event={event} onPress={() => onOpenEvent(event.id)} />
           ))}
           <Text style={styles.note}>Walking time includes getting back to your lab.</Text>
         </View>
@@ -41,12 +43,12 @@ export function BuildingSheet({
   );
 }
 
-function EventRow({ event }: { event: CampusEvent }) {
+function EventRow({ event, onPress }: { event: CampusEvent; onPress: () => void }) {
   const time = event.when.split(' · ').pop();
   const reachable = event.fit !== 'wont';
 
   return (
-    <View style={styles.row}>
+    <Pressable onPress={onPress} style={styles.row}>
       <View style={styles.rowCopy}>
         <Text style={styles.time}>{time}</Text>
         <Text style={[styles.title, !reachable && styles.titleMuted]}>{event.title}</Text>
@@ -55,7 +57,7 @@ function EventRow({ event }: { event: CampusEvent }) {
       <View style={[styles.plus, reachable ? styles.plusOn : styles.plusOff]}>
         <Text style={[styles.plusMark, reachable ? styles.plusMarkOn : styles.plusMarkOff]}>+</Text>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
