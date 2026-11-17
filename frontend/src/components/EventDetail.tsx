@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { events, sharedDetail } from '../data';
 import { colors } from '../theme';
+import { FixConflictSheet } from './FixConflictSheet';
 
 export function EventDetail({
   eventId,
@@ -15,6 +16,7 @@ export function EventDetail({
 }) {
   const event = events.find((item) => item.id === eventId);
   const [added, setAdded] = useState(false);
+  const [finding, setFinding] = useState(false);
   if (!event) return null;
 
   return (
@@ -79,6 +81,11 @@ export function EventDetail({
       </ScrollView>
 
       <View style={styles.footer}>
+        {added ? null : (
+          <Pressable onPress={() => setFinding(true)}>
+            <Text style={styles.find}>Find another way</Text>
+          </Pressable>
+        )}
         {added ? (
           <View style={styles.added}>
             <Text style={styles.addedText}>✓  Added to your day</Text>
@@ -92,6 +99,17 @@ export function EventDetail({
           </Pressable>
         )}
       </View>
+      <FixConflictSheet
+        visible={finding}
+        kicker="FIND ANOTHER WAY"
+        headline="Instead of this event"
+        verb="Add"
+        onClose={() => setFinding(false)}
+        onSwap={() => {
+          setFinding(false);
+          setAdded(true);
+        }}
+      />
     </View>
   );
 }
@@ -161,7 +179,8 @@ const styles = StyleSheet.create({
   avatarText: { fontSize: 11, color: colors.ink },
   goingText: { marginLeft: 8, color: colors.ink, flex: 1 },
   about: { marginTop: 8, fontSize: 16, lineHeight: 22, color: colors.ink },
-  footer: { paddingHorizontal: 20, paddingBottom: 8 },
+  footer: { paddingHorizontal: 20, paddingBottom: 8, gap: 10 },
+  find: { textAlign: 'center', color: colors.ink, textDecorationLine: 'underline', fontSize: 15 },
   add: {
     backgroundColor: colors.orange,
     borderRadius: 14,

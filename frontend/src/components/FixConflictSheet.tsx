@@ -8,10 +8,16 @@ export function FixConflictSheet({
   visible,
   onClose,
   onSwap,
+  kicker = 'INSTEAD OF BIOTECH PANEL',
+  headline = '3 things you can make.',
+  verb = 'Swap in',
 }: {
   visible: boolean;
   onClose: () => void;
   onSwap: (alternativeId: string) => void;
+  kicker?: string;
+  headline?: string;
+  verb?: string;
 }) {
   const [selectedId, setSelectedId] = useState(alternatives[0].id);
   const selected = alternatives.find((item) => item.id === selectedId) ?? alternatives[0];
@@ -24,8 +30,8 @@ export function FixConflictSheet({
           <View style={styles.handle} />
           <View style={styles.heading}>
             <View style={styles.headingCopy}>
-              <Text style={styles.kicker}>INSTEAD OF BIOTECH PANEL</Text>
-              <Text style={styles.title}>3 things you can make.</Text>
+              <Text style={styles.kicker}>{kicker}</Text>
+              <Text style={styles.title}>{headline}</Text>
               <Text style={styles.sub}>Same gap. A little more breathing room.</Text>
             </View>
             <Pressable onPress={onClose} style={styles.close}>
@@ -43,7 +49,7 @@ export function FixConflictSheet({
           ))}
 
           <Pressable onPress={() => onSwap(selected.id)} style={styles.swap}>
-            <Text style={styles.swapText}>Swap in {selected.addLabel}</Text>
+            <Text style={styles.swapText}>{verb} {selected.addLabel}</Text>
           </Pressable>
           <Text style={styles.note}>Includes the walk to your 2:00 PM lab.</Text>
         </View>
