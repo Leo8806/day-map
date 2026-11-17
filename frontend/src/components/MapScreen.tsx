@@ -12,6 +12,7 @@ import { buildings, events, mapChips, type Category } from '../data';
 import { colors } from '../theme';
 import { BuildingSheet } from './BuildingSheet';
 import { EventDetail } from './EventDetail';
+import { MyDayScreen } from './MyDayScreen';
 
 type Tone = 'green' | 'focus' | 'muted' | 'plain';
 
@@ -35,6 +36,7 @@ export function MapScreen() {
   const [category, setCategory] = useState<Category | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [eventId, setEventId] = useState<string | null>(null);
+  const [tab, setTab] = useState<'map' | 'day'>('map');
 
   const selectedBuilding = buildings.find((building) => building.id === selectedId) ?? null;
 
@@ -45,8 +47,17 @@ export function MapScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      {eventId ? (
-        <EventDetail eventId={eventId} onBack={() => setEventId(null)} />
+      {tab === 'day' ? (
+        <MyDayScreen />
+      ) : eventId ? (
+        <EventDetail
+          eventId={eventId}
+          onBack={() => setEventId(null)}
+          onViewDay={() => {
+            setEventId(null);
+            setTab('day');
+          }}
+        />
       ) : (
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
@@ -140,18 +151,26 @@ export function MapScreen() {
       )}
 
       <View style={styles.tabs}>
-        <View style={styles.tab}>
-          <Text style={styles.tabIcon}>▣</Text>
-          <Text style={styles.tabLabel}>Map</Text>
-          <View style={styles.tabMark} />
-        </View>
-        <View style={styles.tab}>
-          <Text style={[styles.tabIcon, styles.tabIdleIcon]}>▦</Text>
-          <Text style={[styles.tabLabel, styles.tabIdle]}>My day</Text>
-        </View>
+        <Pressable style={styles.tab} onPress={() => setTab('map')}>
+          <Text style={[styles.tabIcon, tab !== 'map' && styles.tabIdleIcon]}>▣</Text>
+          <Text style={[styles.tabLabel, tab !== 'map' && styles.tabIdle]}>Map</Text>
+          {tab === 'map' ? <View style={styles.tabMark} /> : null}
+        </Pressable>
+        <Pressable
+          style={styles.tab}
+          onPress={() => {
+            setEventId(null);
+            setSelectedId(null);
+            setTab('day');
+          }}
+        >
+          <Text style={[styles.tabIcon, tab !== 'day' && styles.tabIdleIcon]}>▦</Text>
+          <Text style={[styles.tabLabel, tab !== 'day' && styles.tabIdle]}>My day</Text>
+          {tab === 'day' ? <View style={styles.tabMark} /> : null}
+        </Pressable>
       </View>
       <BuildingSheet
-        building={eventId ? null : selectedBuilding}
+        building={eventId || tab === 'day' ? null : selectedBuilding}
         onClose={() => setSelectedId(null)}
         onOpenEvent={setEventId}
       />

@@ -4,7 +4,15 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { events, sharedDetail } from '../data';
 import { colors } from '../theme';
 
-export function EventDetail({ eventId, onBack }: { eventId: string; onBack: () => void }) {
+export function EventDetail({
+  eventId,
+  onBack,
+  onViewDay,
+}: {
+  eventId: string;
+  onBack: () => void;
+  onViewDay: () => void;
+}) {
   const event = events.find((item) => item.id === eventId);
   const [added, setAdded] = useState(false);
   if (!event) return null;
@@ -74,7 +82,9 @@ export function EventDetail({ eventId, onBack }: { eventId: string; onBack: () =
         {added ? (
           <View style={styles.added}>
             <Text style={styles.addedText}>✓  Added to your day</Text>
-            <Text style={styles.viewDay}>View day →</Text>
+            <Pressable onPress={onViewDay}>
+              <Text style={styles.viewDay}>View day →</Text>
+            </Pressable>
           </View>
         ) : (
           <Pressable onPress={() => setAdded(true)} style={styles.add}>
