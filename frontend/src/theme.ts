@@ -1,0 +1,31 @@
+export const colors = {
+  bg: '#F4EFE7',
+  ink: '#1C1916',
+  muted: '#8E867E',
+  faint: '#B7AFA6',
+  line: '#E4DCD2',
+  white: '#FFFCF8',
+  orange: '#E4562C',
+  green: '#1F7A45',
+  greenBg: '#E3F3E7',
+  greenSoft: '#D7EBD6',
+  greenCard: '#E5F6E8',
+  yellow: '#E0A81A',
+  yellowBg: '#FFF4D4',
+  yellowInk: '#8A5B10',
+  black: '#1A1917',
+  map: '#E7E1D6',
+  street: '#D4CDC2',
+  danger: '#D64532',
+  dangerBg: '#FDEEEC',
+  cardMuted: '#E7E1D8',
+  overlay: 'rgba(48, 40, 32, 0.38)',
+};
+
+export const fonts = {
+  serif: 'Fraunces_700Bold',
+  serifSoft: 'Fraunces_600SemiBold',
+  sans: 'DMSans_400Regular',
+  sansMed: 'DMSans_500Medium',
+  sansBold: 'DMSans_700Bold',
+};
