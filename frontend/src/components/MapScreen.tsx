@@ -12,6 +12,7 @@ import { buildings, events, mapChips, type Category } from '../data';
 import { colors } from '../theme';
 import { BuildingSheet } from './BuildingSheet';
 import { EventDetail } from './EventDetail';
+import { FiltersSheet } from './FiltersSheet';
 import { MyDayScreen } from './MyDayScreen';
 import { SearchScreen } from './SearchScreen';
 
@@ -21,9 +22,19 @@ function categoryMatch(category: Category | null, eventCategory: Category) {
   return category == null || category === eventCategory;
 }
 
-function buildingTone(buildingId: string, category: Category | null, reachableOnly: boolean): Tone {
+function buildingTone(
+  buildingId: string,
+  category: Category | null,
+  reachableOnly: boolean,
+  startHour: number,
+  endHour: number,
+): Tone {
   const atBuilding = events.filter(
-    (event) => event.buildingId === buildingId && categoryMatch(category, event.category),
+    (event) =>
+      event.buildingId === buildingId &&
+      categoryMatch(category, event.category) &&
+      event.startHour >= startHour &&
+      event.startHour < endHour,
   );
   const shown = reachableOnly ? atBuilding.filter((event) => event.fit !== 'wont') : atBuilding;
   if (shown.length === 0) return 'muted';
@@ -35,6 +46,9 @@ function buildingTone(buildingId: string, category: Category | null, reachableOn
 export function MapScreen() {
   const [reachableOnly, setReachableOnly] = useState(true);
   const [category, setCategory] = useState<Category | null>(null);
+  const [startHour, setStartHour] = useState(12);
+  const [endHour, setEndHour] = useState(18);
+  const [filtersOpen, setFiltersOpen] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [eventId, setEventId] = useState<string | null>(null);
   const [tab, setTab] = useState<'map' | 'day'>('map');
@@ -44,8 +58,13 @@ export function MapScreen() {
 
   const reachableCount = events.filter((event) => {
     if (!categoryMatch(category, event.category)) return false;
+    if (event.startHour < startHour || event.startHour >= endHour) return false;
     return reachableOnly ? event.fit !== 'wont' : true;
   }).length;
+
+  function toneFor(id: string) {
+    return buildingTone(id, category, reachableOnly, startHour, endHour);
+  }
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -80,7 +99,7 @@ export function MapScreen() {
           <Text style={styles.wordmark}>DAY MAP</Text>
         </View>
 
-        <View style={styles.freeCard}>
+        <Pressable style={styles.freeCard} onPress={() => setFiltersOpen(true)}>
           <View style={styles.freeCopy}>
             <Text style={styles.freeLabel}>FREE UNTIL</Text>
             <Text style={styles.freeTitle}>2:00 PM lab</Text>
@@ -90,7 +109,7 @@ export function MapScreen() {
             <Text style={styles.minutes}>58 min</Text>
             <Text style={styles.freeHint}>to explore</Text>
           </View>
-        </View>
+        </Pressable>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
           <Pressable
@@ -123,9 +142,9 @@ export function MapScreen() {
         <View style={styles.map}>
           <Text style={styles.street}>WALNUT ST</Text>
           <View style={styles.row}>
-            <BuildingBlock id="huntsman" category={category} reachableOnly={reachableOnly} selected={selectedId === 'huntsman'} onPress={setSelectedId} />
-            <BuildingBlock id="houston" category={category} reachableOnly={reachableOnly} selected={selectedId === 'houston'} onPress={setSelectedId} wide />
-            <BuildingBlock id="vanpelt" category={category} reachableOnly={reachableOnly} selected={selectedId === 'vanpelt'} onPress={setSelectedId} />
+            <BuildingBlock id="huntsman" tone={toneFor('huntsman')} selected={selectedId === 'huntsman'} onPress={setSelectedId} />
+            <BuildingBlock id="houston" tone={toneFor('houston')} selected={selectedId === 'houston'} onPress={setSelectedId} wide />
+            <BuildingBlock id="vanpelt" tone={toneFor('vanpelt')} selected={selectedId === 'vanpelt'} onPress={setSelectedId} />
           </View>
           <Text style={styles.streetRight}>LOCUST WALK</Text>
           <View style={styles.row}>
@@ -134,8 +153,8 @@ export function MapScreen() {
               <View style={[styles.tree, styles.treeSmall]} />
               <View style={styles.tree} />
             </View>
-            <BuildingBlock id="towne" category={category} reachableOnly={reachableOnly} selected={selectedId === 'towne'} onPress={setSelectedId} wide />
-            <BuildingBlock id="levine" category={category} reachableOnly={reachableOnly} selected={selectedId === 'levine'} onPress={setSelectedId} />
+            <BuildingBlock id="towne" tone={toneFor('towne')} selected={selectedId === 'towne'} onPress={setSelectedId} wide />
+            <BuildingBlock id="levine" tone={toneFor('levine')} selected={selectedId === 'levine'} onPress={setSelectedId} />
           </View>
           <View style={styles.here}>
             <View style={styles.hereDot} />
@@ -181,9 +200,26 @@ export function MapScreen() {
         </Pressable>
       </View>
       <BuildingSheet
-        building={eventId || searching || tab === 'day' ? null : selectedBuilding}
+        building={eventId || searching || tab === 'day' || filtersOpen ? null : selectedBuilding}
         onClose={() => setSelectedId(null)}
         onOpenEvent={setEventId}
+      />
+      <FiltersSheet
+        visible={filtersOpen && tab === 'map' && !searching && !eventId}
+        category={category}
+        startHour={startHour}
+        endHour={endHour}
+        onCategory={setCategory}
+        onHours={(start, end) => {
+          setStartHour(start);
+          setEndHour(end);
+        }}
+        onReset={() => {
+          setCategory(null);
+          setStartHour(12);
+          setEndHour(18);
+        }}
+        onClose={() => setFiltersOpen(false)}
       />
     </SafeAreaView>
   );
@@ -191,22 +227,19 @@ export function MapScreen() {
 
 function BuildingBlock({
   id,
-  category,
-  reachableOnly,
+  tone,
   selected,
   onPress,
   wide,
 }: {
   id: string;
-  category: Category | null;
-  reachableOnly: boolean;
+  tone: Tone;
   selected: boolean;
   onPress: (id: string) => void;
   wide?: boolean;
 }) {
   const building = buildings.find((item) => item.id === id);
   const count = events.filter((event) => event.buildingId === id).length;
-  const tone = buildingTone(id, category, reachableOnly);
   const palette = {
     green: { backgroundColor: colors.greenSoft, borderColor: colors.ink, color: colors.ink },
     focus: { backgroundColor: colors.white, borderColor: colors.ink, color: colors.ink },
