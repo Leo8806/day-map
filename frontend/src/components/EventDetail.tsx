@@ -7,16 +7,21 @@ import { FixConflictSheet } from './FixConflictSheet';
 
 export function EventDetail({
   eventId,
+  added,
+  onAdd,
   onBack,
   onViewDay,
 }: {
   eventId: string;
+  added: boolean;
+  onAdd: (id: string) => void;
   onBack: () => void;
   onViewDay: () => void;
 }) {
   const event = events.find((item) => item.id === eventId);
-  const [added, setAdded] = useState(false);
   const [finding, setFinding] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const showingAdded = added || confirmed;
   if (!event) return null;
 
   return (
@@ -81,12 +86,12 @@ export function EventDetail({
       </ScrollView>
 
       <View style={styles.footer}>
-        {added ? null : (
+        {showingAdded ? null : (
           <Pressable onPress={() => setFinding(true)}>
             <Text style={styles.find}>Find another way</Text>
           </Pressable>
         )}
-        {added ? (
+        {showingAdded ? (
           <View style={styles.added}>
             <Text style={styles.addedText}>✓  Added to your day</Text>
             <Pressable onPress={onViewDay}>
@@ -94,7 +99,7 @@ export function EventDetail({
             </Pressable>
           </View>
         ) : (
-          <Pressable onPress={() => setAdded(true)} style={styles.add}>
+          <Pressable onPress={() => onAdd(eventId)} style={styles.add}>
             <Text style={styles.addText}>Add to my day</Text>
           </Pressable>
         )}
@@ -105,9 +110,10 @@ export function EventDetail({
         headline="Instead of this event"
         verb="Add"
         onClose={() => setFinding(false)}
-        onSwap={() => {
+        onSwap={(id) => {
           setFinding(false);
-          setAdded(true);
+          setConfirmed(true);
+          onAdd(id);
         }}
       />
     </View>

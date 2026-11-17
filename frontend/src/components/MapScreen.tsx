@@ -53,6 +53,11 @@ export function MapScreen() {
   const [eventId, setEventId] = useState<string | null>(null);
   const [tab, setTab] = useState<'map' | 'day'>('map');
   const [searching, setSearching] = useState(false);
+  const [addedIds, setAddedIds] = useState<string[]>([]);
+
+  function addToDay(id: string) {
+    setAddedIds((current) => (current.includes(id) ? current : [...current, id]));
+  }
 
   const selectedBuilding = buildings.find((building) => building.id === selectedId) ?? null;
 
@@ -69,7 +74,7 @@ export function MapScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       {tab === 'day' ? (
-        <MyDayScreen />
+        <MyDayScreen addedIds={addedIds} />
       ) : searching ? (
         <SearchScreen
           onCancel={() => setSearching(false)}
@@ -81,6 +86,8 @@ export function MapScreen() {
       ) : eventId ? (
         <EventDetail
           eventId={eventId}
+          added={addedIds.includes(eventId)}
+          onAdd={addToDay}
           onBack={() => setEventId(null)}
           onViewDay={() => {
             setEventId(null);
@@ -195,7 +202,14 @@ export function MapScreen() {
           }}
         >
           <Text style={[styles.tabIcon, tab !== 'day' && styles.tabIdleIcon]}>▦</Text>
-          <Text style={[styles.tabLabel, tab !== 'day' && styles.tabIdle]}>My day</Text>
+          <View style={styles.tabLabelRow}>
+            <Text style={[styles.tabLabel, tab !== 'day' && styles.tabIdle]}>My day</Text>
+            {addedIds.length > 0 ? (
+              <View style={styles.dayBadge}>
+                <Text style={styles.dayBadgeText}>{addedIds.length}</Text>
+              </View>
+            ) : null}
+          </View>
           {tab === 'day' ? <View style={styles.tabMark} /> : null}
         </Pressable>
       </View>
@@ -404,6 +418,17 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   tab: { flex: 1, alignItems: 'center', gap: 2 },
+  tabLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  dayBadge: {
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.orange,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  dayBadgeText: { color: colors.white, fontSize: 10 },
   tabIcon: { fontSize: 16, color: colors.ink },
   tabIdleIcon: { color: colors.faint },
   tabLabel: { fontSize: 12, color: colors.ink },

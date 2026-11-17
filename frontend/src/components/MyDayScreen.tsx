@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { alternatives, seededDay, type DayBlock } from '../data';
+import { alternatives, events, seededDay, type DayBlock } from '../data';
 import { colors } from '../theme';
 import { FixConflictSheet } from './FixConflictSheet';
 
@@ -17,11 +17,20 @@ const resolvedWalks: Record<string, { label: string; good: boolean }> = {
   panel: { label: '4 min walk · fits', good: true },
 };
 
-export function MyDayScreen() {
+const seededStart: Record<string, number> = {
+  intro: 10.5,
+  lunch: 12,
+  panel: 13.35,
+  lab: 14,
+};
+
+export function MyDayScreen({ addedIds }: { addedIds: string[] }) {
   const [fixing, setFixing] = useState(false);
   const [replacementId, setReplacementId] = useState<string | null>(null);
   const day = seededDay.map((block) => swappedBlock(block, replacementId));
   const walks = replacementId ? resolvedWalks : walkAfter;
+  const timeline = [...day.map((block) => ({ block, added: false, start: seededStart[block.id] ?? 0 })), ...addedRows(addedIds, day)]
+    .sort((a, b) => a.start - b.start);
 
   return (
     <View style={styles.screen}>
@@ -33,13 +42,13 @@ export function MyDayScreen() {
         <View style={styles.subhead}>
           <Text style={styles.date}>Today · Tuesday</Text>
           <View style={styles.countPill}>
-            <Text style={styles.countText}>{day.length} events</Text>
+            <Text style={styles.countText}>{timeline.length} events</Text>
           </View>
         </View>
 
-        {day.map((block) => (
+        {timeline.map(({ block, added }) => (
           <View key={block.id}>
-            <DayCard block={block} />
+            <DayCard block={block} added={added} />
             {walks[block.id] ? (
               <Text style={[styles.walk, walks[block.id].good ? styles.walkGood : styles.walkBad]}>
                 {walks[block.id].label}
@@ -73,6 +82,32 @@ export function MyDayScreen() {
   );
 }
 
+function addedRows(ids: string[], day: DayBlock[]) {
+  const titles = new Set(day.map((block) => block.title));
+  return ids.flatMap((id) => {
+    const event = events.find((item) => item.id === id);
+    if (event) {
+      if (titles.has(event.title)) return [];
+      const time = event.when.split(' · ').pop() ?? event.when;
+      return [{ block: { id: event.id, time, title: event.title, place: event.place }, added: true, start: event.startHour }];
+    }
+    const alternative = alternatives.find((item) => item.id === id);
+    if (!alternative || titles.has(alternative.title)) return [];
+    const [time, place] = alternative.meta.split(' · ');
+    const startLabel = time.split('–')[0];
+    return [{
+      block: { id: alternative.id, time: `${time} PM`, title: alternative.title, place },
+      added: true,
+      start: clockToHour(startLabel),
+    }];
+  });
+}
+
+function clockToHour(clock: string) {
+  const [hour, minute] = clock.split(':').map(Number);
+  return hour + (minute || 0) / 60 + (hour < 8 ? 12 : 0);
+}
+
 function swappedBlock(block: DayBlock, replacementId: string | null): DayBlock {
   if (block.id !== 'panel' || !replacementId) return block;
   const alternative = alternatives.find((item) => item.id === replacementId);
@@ -88,7 +123,7 @@ function swappedBlock(block: DayBlock, replacementId: string | null): DayBlock {
   };
 }
 
-function DayCard({ block }: { block: DayBlock }) {
+function DayCard({ block, added }: { block: DayBlock; added?: boolean }) {
   return (
     <View style={styles.row}>
       <View style={styles.rail}>
@@ -99,6 +134,7 @@ function DayCard({ block }: { block: DayBlock }) {
         <Text style={[styles.cardTitle, block.conflict && styles.cardTitleConflict]}>{block.title}</Text>
         <Text style={styles.place}>{block.place}</Text>
         {block.fromCalendar ? <Text style={styles.calendar}>▦  from Google Calendar</Text> : null}
+        {added ? <Text style={styles.addedNote}>Added from the map</Text> : null}
         {block.conflictNote ? <Text style={styles.conflictNote}>{block.conflictNote}</Text> : null}
       </View>
     </View>
@@ -134,6 +170,7 @@ const styles = StyleSheet.create({
   cardTitleConflict: { color: colors.muted },
   place: { marginTop: 2, color: colors.muted },
   calendar: { marginTop: 8, color: colors.muted, fontSize: 13 },
+  addedNote: { marginTop: 8, color: colors.green, fontSize: 13 },
   conflictNote: { marginTop: 8, color: colors.danger, fontSize: 14 },
   walk: { marginLeft: 26, marginBottom: 8, fontSize: 14, fontStyle: 'italic' },
   walkGood: { color: colors.green },
