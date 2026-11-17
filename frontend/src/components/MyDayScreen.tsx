@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { seededDay, type DayBlock } from '../data';
+import { alternatives, seededDay, type DayBlock } from '../data';
 import { colors } from '../theme';
+import { FixConflictSheet } from './FixConflictSheet';
 
 const walkAfter: Record<string, { label: string; good: boolean }> = {
   intro: { label: '6 min walk · fits', good: true },
@@ -9,8 +11,17 @@ const walkAfter: Record<string, { label: string; good: boolean }> = {
   panel: { label: '4 min walk · no time to spare', good: false },
 };
 
+const resolvedWalks: Record<string, { label: string; good: boolean }> = {
+  intro: { label: '6 min walk · fits', good: true },
+  lunch: { label: '6 min walk · fits', good: true },
+  panel: { label: '4 min walk · fits', good: true },
+};
+
 export function MyDayScreen() {
-  const conflicts = seededDay.filter((block) => block.conflict).length;
+  const [fixing, setFixing] = useState(false);
+  const [replacementId, setReplacementId] = useState<string | null>(null);
+  const day = seededDay.map((block) => swappedBlock(block, replacementId));
+  const walks = replacementId ? resolvedWalks : walkAfter;
 
   return (
     <View style={styles.screen}>
@@ -22,32 +33,59 @@ export function MyDayScreen() {
         <View style={styles.subhead}>
           <Text style={styles.date}>Today · Tuesday</Text>
           <View style={styles.countPill}>
-            <Text style={styles.countText}>{seededDay.length} events</Text>
+            <Text style={styles.countText}>{day.length} events</Text>
           </View>
         </View>
 
-        {seededDay.map((block) => (
+        {day.map((block) => (
           <View key={block.id}>
             <DayCard block={block} />
-            {walkAfter[block.id] ? (
-              <Text style={[styles.walk, walkAfter[block.id].good ? styles.walkGood : styles.walkBad]}>
-                {walkAfter[block.id].label}
+            {walks[block.id] ? (
+              <Text style={[styles.walk, walks[block.id].good ? styles.walkGood : styles.walkBad]}>
+                {walks[block.id].label}
               </Text>
             ) : null}
           </View>
         ))}
       </ScrollView>
 
-      {conflicts > 0 ? (
+      {replacementId ? (
+        <View style={styles.resolved}>
+          <Text style={styles.resolvedText}>✓  Everything in your day fits.</Text>
+        </View>
+      ) : (
         <View style={styles.banner}>
           <Text style={styles.bannerText}>!  One conflict in your day</Text>
-          <Pressable style={styles.fix}>
+          <Pressable style={styles.fix} onPress={() => setFixing(true)}>
             <Text style={styles.fixText}>Fix it →</Text>
           </Pressable>
         </View>
-      ) : null}
+      )}
+      <FixConflictSheet
+        visible={fixing}
+        onClose={() => setFixing(false)}
+        onSwap={(alternativeId) => {
+          setReplacementId(alternativeId);
+          setFixing(false);
+        }}
+      />
     </View>
   );
+}
+
+function swappedBlock(block: DayBlock, replacementId: string | null): DayBlock {
+  if (block.id !== 'panel' || !replacementId) return block;
+  const alternative = alternatives.find((item) => item.id === replacementId);
+  if (!alternative) return block;
+  const [time, place] = alternative.meta.split(' · ');
+  return {
+    ...block,
+    title: alternative.title,
+    time: `${time} PM`,
+    place,
+    conflict: false,
+    conflictNote: undefined,
+  };
 }
 
 function DayCard({ block }: { block: DayBlock }) {
@@ -115,4 +153,13 @@ const styles = StyleSheet.create({
   bannerText: { color: colors.ink, flex: 1 },
   fix: { backgroundColor: colors.black, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 8 },
   fixText: { color: colors.white },
+  resolved: {
+    alignSelf: 'center',
+    marginBottom: 10,
+    backgroundColor: colors.greenBg,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  resolvedText: { color: colors.green },
 });
