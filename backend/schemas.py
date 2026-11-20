@@ -111,3 +111,7 @@ class EventResponse(BaseModel):
     ]
 
     model_config = ConfigDict(from_attributes=True)
+
+    source: str | None = None
+    source_url: str | None = None
+    external_id: str | None = None

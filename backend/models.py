@@ -1,3 +1,4 @@
+
 from datetime import datetime
 
 from sqlalchemy import (
@@ -7,6 +8,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -117,5 +119,57 @@ class Event(Base):
     status: Mapped[str] = mapped_column(
         String(20),
         default="pending",
+        nullable=False
+    )
+
+    # External Event Sources
+    source: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True
+    )
+
+    source_url: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True
+    )
+
+    external_id: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True
+    )
+
+
+# --------------------------------------------------
+# Saved Event Model
+# --------------------------------------------------
+
+class SavedEvent(Base):
+    __tablename__ = "saved_events"
+
+    # Prevent users from saving the same event twice
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "event_id",
+            name="uq_saved_event_user_event"
+        ),
+    )
+
+    # Saved Event Identification
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    # User Who Saved the Event
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=False
+    )
+
+    # Event Being Saved
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("events.id"),
         nullable=False
     )
