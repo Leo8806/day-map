@@ -25,3 +25,17 @@ __pycache__/
 # Expo / React Native
 node_modules/
 .expo/
+# Local databases and secrets
+*.db
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Local backend backups
+backend-backup*/
+backend-old.txt

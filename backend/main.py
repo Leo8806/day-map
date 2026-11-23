@@ -8,7 +8,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from database import Base, engine, get_db, SessionLocal
-from models import User, Event, SavedEvent
+from models import User, Event, SavedEvent, ScheduledEvent, CalendarCommitment, Building, TravelPreference, FriendRequest, GoogleCalendarConnection
 from schemas import (
     UserCreate,
     UserLogin,
@@ -93,7 +93,8 @@ def seed_demo_data() -> None:
         db.close()
 
 
-seed_demo_data()
+if os.getenv("DAYMAP_SEED_DEMO") == "1":
+    seed_demo_data()
 
 
 # --------------------------------------------------
@@ -124,7 +125,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[origin.strip() for origin in os.getenv("DAYMAP_CORS_ORIGINS", "http://localhost:8081,http://localhost:19006").split(",") if origin.strip()],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -522,3 +523,21 @@ def remove_saved_event(
     db.commit()
 
     return {"message": "Event removed successfully"}
+
+
+# Extended schedule, routing, profile and friends APIs
+from routers.planning import router as planning_router
+app.include_router(planning_router)
+from routers.google_calendar import router as google_calendar_router
+app.include_router(google_calendar_router)
+
+from routers.community import router as community_router
+app.include_router(community_router)
+from routers.calendar_files import router as calendar_files_router
+app.include_router(calendar_files_router)
+
+from routers.messaging import router as messaging_router
+app.include_router(messaging_router)
+
+from routers.discovery import router as discovery_router
+app.include_router(discovery_router)

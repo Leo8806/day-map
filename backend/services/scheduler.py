@@ -1,4 +1,5 @@
 
+import os
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from services.penn_events import import_penn_events
@@ -30,10 +31,11 @@ def start_scheduler():
     if scheduler.running:
         return
 
+    hours = max(1, min(24, int(os.getenv("DAYMAP_EVENT_REFRESH_HOURS", "1"))))
     scheduler.add_job(
         refresh_penn_events,
         trigger="interval",
-        hours=6,
+        hours=hours,
         id="penn_engineering_import",
         replace_existing=True,
         max_instances=1,
@@ -41,7 +43,7 @@ def start_scheduler():
     )
 
     scheduler.start()
-    print("Event scheduler started (every 6 hours).")
+    print(f"Event scheduler started (every {hours} hours).")
 
 
 def stop_scheduler():

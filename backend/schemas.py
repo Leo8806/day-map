@@ -115,3 +115,37 @@ class EventResponse(BaseModel):
     source: str | None = None
     source_url: str | None = None
     external_id: str | None = None
+
+
+class TravelPreferencesInput(BaseModel):
+    mode: Literal["walking", "driving", "bicycling", "transit"] = "walking"
+    buffer_minutes: int = Field(default=5, ge=0, le=120)
+
+
+class ScheduleAddInput(BaseModel):
+    event_id: int
+    override_conflicts: bool = False
+
+
+class ScheduleCheckInput(BaseModel):
+    event_id: int
+
+
+class CommitmentInput(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    location: str = Field(default="", max_length=200)
+    start_time: datetime
+    end_time: datetime
+
+    @model_validator(mode="after")
+    def validate_dates(self):
+        if not self.start_time.tzinfo or not self.end_time.tzinfo or self.end_time <= self.start_time:
+            raise ValueError("Provide timezone-aware start/end times, with end after start")
+        return self
+
+
+class BuildingInput(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    address: str = Field(min_length=1, max_length=300)
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
