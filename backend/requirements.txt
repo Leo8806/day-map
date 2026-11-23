@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+pydantic[email]
+pwdlib[argon2]
+PyJWT
+requests
+beautifulsoup4
+APScheduler>=3.10,<4
