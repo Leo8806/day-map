@@ -3,10 +3,11 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
 from fastapi import FastAPI, Depends, HTTPException, Query, status
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from database import Base, engine, get_db
+from database import Base, engine, get_db, SessionLocal
 from models import User, Event, SavedEvent
 from schemas import (
     UserCreate,
@@ -35,6 +36,65 @@ Base.metadata.create_all(bind=engine)
 
 password_hash = PasswordHash.recommended()
 
+DEMO_EMAIL = "demo@daymap.app"
+DEMO_PASSWORD = "daymap-demo"
+
+
+def seed_demo_data() -> None:
+    """Create a demo student and today's sample events when the database is empty."""
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == DEMO_EMAIL).first()
+        if user is None:
+            user = User(
+                name="Demo Student",
+                email=DEMO_EMAIL,
+                password_hash=password_hash.hash(DEMO_PASSWORD),
+                is_admin=True,
+                interests="Career,Research",
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+        if db.query(Event).count() > 0:
+            return
+
+        today = datetime.now().replace(second=0, microsecond=0)
+
+        def at(hour: int, minute: int) -> datetime:
+            return today.replace(hour=hour, minute=minute)
+
+        samples = [
+            ("Biotech coffee chat", "Meet students and researchers in biotech.", "Houston Hall · 2nd floor", at(12, 30), at(13, 15), "Career"),
+            ("Grad info session", "Hear from current students about programs and labs.", "Houston Hall · 2nd floor", at(13, 5), at(13, 50), "Academic"),
+            ("Econ open house", "An open house for economics students.", "Houston Hall · 1st floor", at(13, 40), at(14, 30), "Social"),
+            ("Research drop-in", "Drop in to talk with lab groups.", "Huntsman · 2nd floor", at(12, 30), at(13, 0), "Research"),
+            ("Bioeng lab tour", "A short tour of the bioengineering lab.", "Towne · 2nd floor", at(13, 20), at(13, 50), "Research"),
+            ("Student reading group", "A reading group in the library.", "Van Pelt · 1st floor", at(13, 30), at(14, 30), "Academic"),
+            ("Biotech panel", "A panel that runs into the 2:00 lab.", "Levine", at(13, 20), at(14, 0), "Research"),
+        ]
+        for title, description, location, start, end, category in samples:
+            db.add(
+                Event(
+                    title=title,
+                    description=description,
+                    location=location,
+                    start_time=start,
+                    end_time=end,
+                    category=category,
+                    created_by=user.id,
+                    status="approved",
+                    source="seed",
+                )
+            )
+        db.commit()
+    finally:
+        db.close()
+
+
+seed_demo_data()
+
 
 # --------------------------------------------------
 # Scheduler
@@ -60,6 +120,13 @@ app = FastAPI(
     description="Backend API for the Day Map campus event planner",
     version="1.0.0",
     lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -140,7 +207,7 @@ def login(
             detail="Invalid email or password",
         )
 
-    token = create_access_token({"sub": str(user.id)})
+    token = create_access_token(user.id)
 
     return {
         "access_token": token,
